@@ -7,7 +7,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
-          <Link to="/" className="text-xl font-bold text-pink-600">ChulaEvents</Link>
+          <Link to="/" className="text-xl font-bold text-pink-600">Meet and Feat</Link>
           <div className="space-x-4">
             <Link to="/events">
               <Button variant="ghost">Events</Button>
