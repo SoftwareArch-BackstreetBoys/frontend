@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Users, MapPin, Search, Clock } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 
@@ -57,11 +58,18 @@ const searchEvents = async (query) => {
 
 const EventCard = ({ event, onJoin }) => {
   const eventDate = new Date(event.datetime);
-  const isPublic = !event.clubId;
+  const isClubEvent = !!event.clubId;
 
   return (
-    <Card className="mb-4 p-4">
-      <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
+    <Card className={`mb-4 p-4 ${isClubEvent ? 'bg-purple-50 border-purple-200' : 'bg-white'}`}>
+      <div className="flex justify-between items-start mb-2">
+        <h3 className="text-xl font-semibold">{event.title}</h3>
+        {isClubEvent && (
+          <Badge variant="secondary" className="bg-purple-100 text-purple-800">
+            Club Event
+          </Badge>
+        )}
+      </div>
       <p className="text-gray-600 mb-2">{event.description}</p>
       <div className="flex items-center text-gray-600 mb-2">
         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -79,15 +87,18 @@ const EventCard = ({ event, onJoin }) => {
         <Users className="mr-2 h-4 w-4" />
         <span>{event.curParticipation} / {event.maxParticipation} participants</span>
       </div>
-      <div className="text-gray-600 mb-2">
-        {isPublic ? 'Public Event' : `Club Event: ${event.clubId}`}
-      </div>
+      {isClubEvent && (
+        <div className="text-purple-600 mb-2">
+          Club: {event.clubId}
+        </div>
+      )}
       <div className="text-gray-600 mb-4">
         Created by: {event.createdBy}
       </div>
       <Button 
         onClick={() => onJoin(event.id)}
         disabled={event.curParticipation >= event.maxParticipation}
+        className={isClubEvent ? 'bg-purple-600 hover:bg-purple-700' : ''}
       >
         {event.curParticipation >= event.maxParticipation ? 'Event Full' : 'Join Event'}
       </Button>
