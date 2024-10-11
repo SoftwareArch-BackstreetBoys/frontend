@@ -39,7 +39,7 @@ const leaveClub = async (clubId) => {
 const searchClubs = async (query) => {
   // Mock implementation
   const allClubs = await fetchClubs();
-  return allClubs.filter(club => 
+  return allClubs.filter(club =>
     club.name.toLowerCase().includes(query.toLowerCase()) ||
     club.description.toLowerCase().includes(query.toLowerCase())
   );
@@ -62,7 +62,7 @@ const ClubCard = ({ club, onJoin, onLeave, isMember }) => {
         <h3 className="text-xl font-semibold">{club.name}</h3>
       </div>
       <p className="text-gray-600 mb-4">{club.description}</p>
-      <Button 
+      <Button
         onClick={handleLeaveClick}
         className={isMember ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
       >
@@ -124,6 +124,17 @@ const Clubs = () => {
     leaveMutation.mutate(clubId);
   };
 
+  if (isLoading) {
+    return <p>Loading clubs...</p>;
+  }
+
+  if (error) {
+    return <p>Error loading clubs.</p>;
+  }
+
+  if (!clubs || clubs.length === 0) {
+    return <p>No clubs found.</p>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -140,10 +151,10 @@ const Clubs = () => {
       </div>
       <div className="space-y-6">
         {clubs.map(club => (
-          <ClubCard 
-            key={club.id} 
-            club={club} 
-            onJoin={handleJoinClub} 
+          <ClubCard
+            key={club.id}
+            club={club}
+            onJoin={handleJoinClub}
             onLeave={handleLeaveClub}
             isMember={userClubs.includes(club.id)}
           />
@@ -152,5 +163,6 @@ const Clubs = () => {
     </div>
   );
 };
+
 
 export default Clubs;
