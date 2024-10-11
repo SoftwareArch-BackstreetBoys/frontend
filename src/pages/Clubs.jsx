@@ -3,9 +3,18 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, Users } from 'lucide-react';
+import { Search } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
-// Mock functions to simulate backend services
 const fetchClubs = async () => {
   // Simulating API call
   return [
@@ -37,6 +46,16 @@ const searchClubs = async (query) => {
 };
 
 const ClubCard = ({ club, onJoin, onLeave, isMember }) => {
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+
+  const handleLeaveClick = () => {
+    if (isMember) {
+      setShowLeaveDialog(true);
+    } else {
+      onJoin(club.id);
+    }
+  };
+
   return (
     <Card className="mb-4 p-4">
       <div className="flex justify-between items-start mb-2">
@@ -44,11 +63,25 @@ const ClubCard = ({ club, onJoin, onLeave, isMember }) => {
       </div>
       <p className="text-gray-600 mb-4">{club.description}</p>
       <Button 
-        onClick={() => isMember ? onLeave(club.id) : onJoin(club.id)}
+        onClick={handleLeaveClick}
         className={isMember ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
       >
         {isMember ? 'Leave Club' : 'Join Club'}
       </Button>
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to leave this club?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. You'll need to rejoin if you change your mind.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onLeave(club.id)}>Leave Club</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
@@ -91,8 +124,6 @@ const Clubs = () => {
     leaveMutation.mutate(clubId);
   };
 
-  if (isLoading) return <div>Loading clubs...</div>;
-  if (error) return <div>Error loading clubs: {error.message}</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">

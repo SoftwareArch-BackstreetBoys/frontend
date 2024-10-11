@@ -9,6 +9,7 @@ import Register from "./pages/Register";
 import Events from "./pages/Events";
 import Clubs from "./pages/Clubs";
 import Profile from "./pages/Profile";
+import UserActivities from "./pages/UserActivities";
 
 const queryClient = new QueryClient();
 
@@ -25,6 +26,7 @@ const App = () => (
             <Route path="events" element={<Events />} />
             <Route path="clubs" element={<Clubs />} />
             <Route path="profile" element={<Profile />} />
+            <Route path="my-activities" element={<UserActivities />} />
           </Route>
         </Routes>
       </BrowserRouter>

@@ -1,10 +1,20 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Users, MapPin, Search, Clock } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 // Mock functions to simulate backend services
 const fetchEvents = async () => {
@@ -47,6 +57,12 @@ const joinEvent = async (eventId) => {
   // In a real implementation, this would make an API call to join the event
 };
 
+const leaveEvent = async (eventId) => {
+  // Mock implementation
+  console.log(`Left event with ID: ${eventId}`);
+  // In a real implementation, this would make an API call to leave the event
+};
+
 const searchEvents = async (query) => {
   // Mock implementation
   const allEvents = await fetchEvents();
@@ -56,9 +72,18 @@ const searchEvents = async (query) => {
   );
 };
 
-const EventCard = ({ event, onJoin }) => {
+const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const eventDate = new Date(event.datetime);
   const isClubEvent = !!event.clubId;
+
+  const handleActionClick = () => {
+    if (isParticipant) {
+      setShowLeaveDialog(true);
+    } else {
+      onJoin(event.id);
+    }
+  };
 
   return (
     <Card className={`mb-4 p-4 ${isClubEvent ? 'bg-purple-50 border-purple-200' : 'bg-white'}`}>
@@ -96,30 +121,67 @@ const EventCard = ({ event, onJoin }) => {
         Created by: {event.createdBy}
       </div>
       <Button 
-        onClick={() => onJoin(event.id)}
-        disabled={event.curParticipation >= event.maxParticipation}
+        onClick={handleActionClick}
+        disabled={!isParticipant && event.curParticipation >= event.maxParticipation}
         className={isClubEvent ? 'bg-purple-600 hover:bg-purple-700' : ''}
       >
-        {event.curParticipation >= event.maxParticipation ? 'Event Full' : 'Join Event'}
+        {!isParticipant && event.curParticipation >= event.maxParticipation ? 'Event Full' : 
+         isParticipant ? 'Leave Event' : 'Join Event'}
       </Button>
+      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure you want to leave this event?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. You may not be able to rejoin if the event becomes full.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={() => onLeave(event.id)}>Leave Event</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 };
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
-  const { data: events, isLoading, error, refetch } = useQuery({
+  const [userEvents, setUserEvents] = useState([]);  // In a real app, this would be fetched from the backend
+  const queryClient = useQueryClient();
+
+  const { data: events, isLoading, error } = useQuery({
     queryKey: ['events', searchQuery],
     queryFn: () => searchQuery ? searchEvents(searchQuery) : fetchEvents(),
   });
 
-  const handleJoinEvent = async (eventId) => {
-    await joinEvent(eventId);
-    refetch(); // Refetch events to update the UI
-  };
+  const joinMutation = useMutation({
+    mutationFn: joinEvent,
+    onSuccess: (data, eventId) => {
+      setUserEvents([...userEvents, eventId]);
+      queryClient.invalidateQueries(['events']);
+    },
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: leaveEvent,
+    onSuccess: (data, eventId) => {
+      setUserEvents(userEvents.filter(id => id !== eventId));
+      queryClient.invalidateQueries(['events']);
+    },
+  });
 
   const handleSearch = (e) => {
     setSearchQuery(e.target.value);
+  };
+
+  const handleJoinEvent = (eventId) => {
+    joinMutation.mutate(eventId);
+  };
+
+  const handleLeaveEvent = (eventId) => {
+    leaveMutation.mutate(eventId);
   };
 
   if (isLoading) return <div>Loading events...</div>;
@@ -140,9 +202,13 @@ const Events = () => {
       </div>
       <div className="space-y-6">
         {events.map(event => (
-          (!event.clubId || isUserInClub(event.clubId)) && (
-            <EventCard key={event.id} event={event} onJoin={handleJoinEvent} />
-          )
+          <EventCard 
+            key={event.id} 
+            event={event} 
+            onJoin={handleJoinEvent} 
+            onLeave={handleLeaveEvent}
+            isParticipant={userEvents.includes(event.id)}
+          />
         ))}
       </div>
     </div>
