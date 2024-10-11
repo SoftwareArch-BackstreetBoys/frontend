@@ -2,20 +2,43 @@ import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CalendarIcon, Users, MapPin, Search } from 'lucide-react';
+import { CalendarIcon, Users, MapPin, Search, Clock } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 
 // Mock functions to simulate backend services
 const fetchEvents = async () => {
   // Simulating API call
   return [
-    { id: 1, title: 'Public Event 1', date: '2024-03-15', time: '14:00', location: 'Main Hall', participants: 50, isPublic: true, organizer: 'University', description: 'A public event for all students' },
-    { id: 2, title: 'Club Event 1', date: '2024-03-16', time: '15:30', location: 'Club Room A', participants: 20, isPublic: false, organizer: 'Chess Club', description: 'Chess tournament for club members' },
-    { id: 3, title: 'Public Event 2', date: '2024-03-17', time: '10:00', location: 'Auditorium', participants: 100, isPublic: true, organizer: 'Student Council', description: 'Annual student gathering' },
+    { 
+      id: '507f1f77bcf86cd799439011',
+      title: 'Public Event 1',
+      description: 'A public event for all students',
+      datetime: '2024-03-15T14:00:00Z',
+      location: 'Main Hall',
+      maxParticipation: 100,
+      curParticipation: 50,
+      clubId: null,
+      createdBy: 'admin123',
+      createdAt: '2024-02-01T10:00:00Z',
+      updatedAt: '2024-02-01T10:00:00Z'
+    },
+    { 
+      id: '507f1f77bcf86cd799439012',
+      title: 'Club Event 1',
+      description: 'Chess tournament for club members',
+      datetime: '2024-03-16T15:30:00Z',
+      location: 'Club Room A',
+      maxParticipation: 30,
+      curParticipation: 20,
+      clubId: 'chess123',
+      createdBy: 'chesspresident',
+      createdAt: '2024-02-02T11:00:00Z',
+      updatedAt: '2024-02-02T11:00:00Z'
+    },
   ];
 };
 
-const isUserInClub = (eventId) => eventId % 2 === 0; // Mock function
+const isUserInClub = (clubId) => clubId === 'chess123'; // Mock function
 
 const joinEvent = async (eventId) => {
   // Mock implementation
@@ -32,28 +55,45 @@ const searchEvents = async (query) => {
   );
 };
 
-const EventCard = ({ event, onJoin }) => (
-  <Card className="mb-4 p-4">
-    <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
-    <p className="text-gray-600 mb-2">{event.description}</p>
-    <div className="flex items-center text-gray-600 mb-2">
-      <CalendarIcon className="mr-2 h-4 w-4" />
-      <span>{event.date} at {event.time}</span>
-    </div>
-    <div className="flex items-center text-gray-600 mb-2">
-      <MapPin className="mr-2 h-4 w-4" />
-      <span>{event.location}</span>
-    </div>
-    <div className="flex items-center text-gray-600 mb-2">
-      <Users className="mr-2 h-4 w-4" />
-      <span>{event.participants} participants</span>
-    </div>
-    <div className="text-gray-600 mb-4">
-      Organizer: {event.organizer}
-    </div>
-    <Button onClick={() => onJoin(event.id)}>Join Event</Button>
-  </Card>
-);
+const EventCard = ({ event, onJoin }) => {
+  const eventDate = new Date(event.datetime);
+  const isPublic = !event.clubId;
+
+  return (
+    <Card className="mb-4 p-4">
+      <h3 className="text-xl font-semibold mb-2">{event.title}</h3>
+      <p className="text-gray-600 mb-2">{event.description}</p>
+      <div className="flex items-center text-gray-600 mb-2">
+        <CalendarIcon className="mr-2 h-4 w-4" />
+        <span>{eventDate.toLocaleDateString()}</span>
+      </div>
+      <div className="flex items-center text-gray-600 mb-2">
+        <Clock className="mr-2 h-4 w-4" />
+        <span>{eventDate.toLocaleTimeString()}</span>
+      </div>
+      <div className="flex items-center text-gray-600 mb-2">
+        <MapPin className="mr-2 h-4 w-4" />
+        <span>{event.location}</span>
+      </div>
+      <div className="flex items-center text-gray-600 mb-2">
+        <Users className="mr-2 h-4 w-4" />
+        <span>{event.curParticipation} / {event.maxParticipation} participants</span>
+      </div>
+      <div className="text-gray-600 mb-2">
+        {isPublic ? 'Public Event' : `Club Event: ${event.clubId}`}
+      </div>
+      <div className="text-gray-600 mb-4">
+        Created by: {event.createdBy}
+      </div>
+      <Button 
+        onClick={() => onJoin(event.id)}
+        disabled={event.curParticipation >= event.maxParticipation}
+      >
+        {event.curParticipation >= event.maxParticipation ? 'Event Full' : 'Join Event'}
+      </Button>
+    </Card>
+  );
+};
 
 const Events = () => {
   const [searchQuery, setSearchQuery] = useState('');
@@ -89,7 +129,7 @@ const Events = () => {
       </div>
       <div className="space-y-6">
         {events.map(event => (
-          (event.isPublic || isUserInClub(event.id)) && (
+          (!event.clubId || isUserInClub(event.clubId)) && (
             <EventCard key={event.id} event={event} onJoin={handleJoinEvent} />
           )
         ))}
