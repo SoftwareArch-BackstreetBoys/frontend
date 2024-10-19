@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  vite-app:
+    build:
+      context: ./
+      dockerfile: Dockerfile
+    ports:
+      - "4173:4173" # Map host port 5555 to container port 5555
+    # volumes:
+    #   - .:/app # Mount the current directory into the container (for development purposes)
+    # environment:
+    #   NODE_ENV: production # Set environment variables if needed
