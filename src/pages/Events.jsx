@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CalendarIcon, Users, MapPin, Search, Clock } from 'lucide-react';
 import { Input } from "@/components/ui/input";
+import axios from 'axios';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,34 +20,41 @@ import {
 // Mock functions to simulate backend services
 const fetchEvents = async () => {
   // Simulating API call
-  return [
-    { 
-      id: '507f1f77bcf86cd799439011',
-      title: 'Public Event 1',
-      description: 'A public event for all students',
-      datetime: '2024-03-15T14:00:00Z',
-      location: 'Main Hall',
-      maxParticipation: 100,
-      curParticipation: 50,
-      clubId: null,
-      createdBy: 'admin123',
-      createdAt: '2024-02-01T10:00:00Z',
-      updatedAt: '2024-02-01T10:00:00Z'
-    },
-    { 
-      id: '507f1f77bcf86cd799439012',
-      title: 'Club Event 1',
-      description: 'Chess tournament for club members',
-      datetime: '2024-03-16T15:30:00Z',
-      location: 'Club Room A',
-      maxParticipation: 30,
-      curParticipation: 20,
-      clubId: 'chess123',
-      createdBy: 'chesspresident',
-      createdAt: '2024-02-02T11:00:00Z',
-      updatedAt: '2024-02-02T11:00:00Z'
-    },
-  ];
+  // return [
+  //   {
+  //     id: '507f1f77bcf86cd799439011',
+  //     title: 'Public Event 1',
+  //     description: 'A public event for all students',
+  //     datetime: '2024-03-15T14:00:00Z',
+  //     location: 'Main Hall',
+  //     maxParticipation: 100,
+  //     curParticipation: 50,
+  //     clubId: null,
+  //     createdBy: 'admin123',
+  //     createdAt: '2024-02-01T10:00:00Z',
+  //     updatedAt: '2024-02-01T10:00:00Z'
+  //   },
+  //   {
+  //     id: '507f1f77bcf86cd799439012',
+  //     title: 'Club Event 1',
+  //     description: 'Chess tournament for club members',
+  //     datetime: '2024-03-16T15:30:00Z',
+  //     location: 'Club Room A',
+  //     maxParticipation: 30,
+  //     curParticipation: 20,
+  //     clubId: 'chess123',
+  //     createdBy: 'chesspresident',
+  //     createdAt: '2024-02-02T11:00:00Z',
+  //     updatedAt: '2024-02-02T11:00:00Z'
+  //   },
+  // ];
+  try {
+    const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/events`);
+    return events.data.events
+  } catch (error) {
+    console.error("Error fetching events:", error);
+    throw error
+  }
 };
 
 const isUserInClub = (clubId) => clubId === 'chess123'; // Mock function
@@ -66,7 +74,7 @@ const leaveEvent = async (eventId) => {
 const searchEvents = async (query) => {
   // Mock implementation
   const allEvents = await fetchEvents();
-  return allEvents.filter(event => 
+  return allEvents.filter(event =>
     event.title.toLowerCase().includes(query.toLowerCase()) ||
     event.description.toLowerCase().includes(query.toLowerCase())
   );
@@ -110,7 +118,7 @@ const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
       </div>
       <div className="flex items-center text-gray-600 mb-2">
         <Users className="mr-2 h-4 w-4" />
-        <span>{event.curParticipation} / {event.maxParticipation} participants</span>
+        <span>{event.cur_participation} / {event.max_participation} participants</span>
       </div>
       {isClubEvent && (
         <div className="text-purple-600 mb-2">
@@ -120,13 +128,13 @@ const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
       <div className="text-gray-600 mb-4">
         Created by: {event.createdBy}
       </div>
-      <Button 
+      <Button
         onClick={handleActionClick}
         disabled={!isParticipant && event.curParticipation >= event.maxParticipation}
         className={isClubEvent ? 'bg-purple-600 hover:bg-purple-700' : ''}
       >
-        {!isParticipant && event.curParticipation >= event.maxParticipation ? 'Event Full' : 
-         isParticipant ? 'Leave Event' : 'Join Event'}
+        {!isParticipant && event.curParticipation >= event.maxParticipation ? 'Event Full' :
+          isParticipant ? 'Leave Event' : 'Join Event'}
       </Button>
       <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent>
@@ -184,8 +192,18 @@ const Events = () => {
     leaveMutation.mutate(eventId);
   };
 
-  if (isLoading) return <div>Loading events...</div>;
-  if (error) return <div>Error loading events: {error.message}</div>;
+  // Add loading and error states
+  if (isLoading) {
+    return <div>Loading events...</div>; // Loading indicator
+  }
+
+  if (error) {
+    return <div>Error loading events: {error.message}</div>; // Error handling
+  }
+
+  if (!events || events.length === 0) {
+    return <div>No events found.</div>; // No events handling
+  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -202,10 +220,10 @@ const Events = () => {
       </div>
       <div className="space-y-6">
         {events.map(event => (
-          <EventCard 
-            key={event.id} 
-            event={event} 
-            onJoin={handleJoinEvent} 
+          <EventCard
+            key={event.id}
+            event={event}
+            onJoin={handleJoinEvent}
             onLeave={handleLeaveEvent}
             isParticipant={userEvents.includes(event.id)}
           />

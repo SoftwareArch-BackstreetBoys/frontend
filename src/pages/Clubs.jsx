@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import axios from 'axios';
 import { Search } from 'lucide-react';
 import {
   AlertDialog,
@@ -17,11 +18,18 @@ import {
 
 const fetchClubs = async () => {
   // Simulating API call
-  return [
-    { id: 'club1', name: 'Chess Club', description: 'For chess enthusiasts' },
-    { id: 'club2', name: 'Debate Society', description: 'Improve your public speaking skills' },
-    { id: 'club3', name: 'Robotics Club', description: 'Build and program robots' },
-  ];
+  // return [
+  //   { id: 'club1', name: 'Chess Club', description: 'For chess enthusiasts' },
+  //   { id: 'club2', name: 'Debate Society', description: 'Improve your public speaking skills' },
+  //   { id: 'club3', name: 'Robotics Club', description: 'Build and program robots' },
+  // ];
+  try {
+    const clubs = await axios.get(`${process.env.REACT_APP_CLUB_ROUTE}/clubs`);
+    return clubs.data
+  } catch (error) {
+    console.error("Error fetching clubs:", error);
+    throw error
+  }
 };
 
 const joinClub = async (clubId) => {
