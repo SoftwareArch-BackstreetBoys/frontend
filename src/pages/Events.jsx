@@ -126,7 +126,7 @@ const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
         </div>
       )}
       <div className="text-gray-600 mb-4">
-        Created by: {event.createdBy}
+        Created by: {event.created_by}
       </div>
       <Button
         onClick={handleActionClick}
