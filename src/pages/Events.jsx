@@ -118,7 +118,7 @@ const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
       </div>
       <div className="flex items-center text-gray-600 mb-2">
         <Users className="mr-2 h-4 w-4" />
-        <span>{event.cur_participation} / {event.max_participation} participants</span>
+        <span>{event.cur_participation || 0} / {event.max_participation} participants</span>
       </div>
       {isClubEvent && (
         <div className="text-purple-600 mb-2">
