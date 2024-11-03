@@ -3,7 +3,8 @@ import { Button } from "@/components/ui/button";
 
 const Login = () => {
   const handleOnClick = () => {
-    window.location.href = `${process.env.GOOGLE_OAUTH_ROUTE}/auth/login`;
+    const callbackUrl = window.location.origin + '/events';
+    window.location.href = `${process.env.GOOGLE_OAUTH_ROUTE}/auth/login?callbackUrl=${callbackUrl}`;
   }
 
   return (
