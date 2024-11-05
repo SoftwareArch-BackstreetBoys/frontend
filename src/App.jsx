@@ -26,7 +26,7 @@ const App = () => (
             <Route path="events" element={<Events />} />
             <Route path="clubs" element={<Clubs />} />
             <Route path="profile" element={<Profile />} />
-            <Route path="my-activities" element={<UserActivities />} />
+            {/* <Route path="my-activities" element={<UserActivities />} /> */}
           </Route>
         </Routes>
       </BrowserRouter>

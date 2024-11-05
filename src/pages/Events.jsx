@@ -43,10 +43,15 @@ const fetchEvents = async () => {
 
 const isUserInClub = (clubId) => clubId === 'chess123'; // Mock function
 
-const joinEvent = async (eventId) => {
-  // Mock implementation
-  console.log(`Joined event with ID: ${eventId}`);
-  // In a real implementation, this would make an API call to join the event
+const joinEvent = async (payload) => {
+  const [user] = useFetchUser();
+  payload.userId = user.id
+  return axios.post("http://34.57.95.175:8000/event/event/${eventId}", payload, {
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+    }
+  });
 };
 
 const leaveEvent = async (eventId) => {
@@ -248,9 +253,9 @@ const EventCard = ({ event, onJoin, onLeave, isParticipant }) => {
         </div>
       )}
       <div className="text-gray-600 mb-4">
-        Created by: {event.created_by}
+        Created by: {event.created_by_name}
       </div>
-      {user &&
+      {user && (user.id !== event.created_by_id) &&
         <Button
           onClick={handleActionClick}
           disabled={!isParticipant && event.curParticipation >= event.max_participation}
