@@ -1,14 +1,21 @@
 import { Button } from "@/components/ui/button"
 import { useGoogleLogin } from "@react-oauth/google"
+import Cookies from "universal-cookie"
 
 const Login = () => {
   const googleLogin = useGoogleLogin({
     onSuccess: async (tokenResponse) => {
-      console.log("Google login successful", tokenResponse)
+      // console.log("Google login successful", tokenResponse)
       const response = await fetch(
         `${process.env.GOOGLE_OAUTH_ROUTE}/auth/login/callback?token=${tokenResponse.access_token}`
       )
-      console.log("Google login response", await response.json())
+      const data = await response.json()
+      const cookies = new Cookies()
+
+      cookies.set("jwt", data.token, {
+        expires: new Date(new Date().getTime() + 60 * 60 * 1000 * 24 * 3),
+        sameSite: "strict",
+      })
 
       // You can now use the tokenResponse to authenticate the user in your app
     },
