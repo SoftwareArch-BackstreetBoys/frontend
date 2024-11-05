@@ -3,14 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CalendarIcon, Users } from 'lucide-react';
+import { useFetchUser } from '@/utils/useFetchUser';
+import axios from 'axios';
 
 // Mock functions to fetch user's joined events and clubs
-const fetchUserEvents = async () => {
-  // Simulating API call
-  return [
-    { id: 'event1', title: 'Chess Tournament', datetime: '2024-03-15T14:00:00Z' },
-    { id: 'event2', title: 'Debate Competition', datetime: '2024-03-20T15:30:00Z' },
-  ];
+const fetchUserEvents = async (userId) => {
+  try {
+    const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/user/${userId}/participated-events`);
+    // console.log("participated events:", events.data.events)
+    return events.data.events
+  } catch (error) {
+    console.error("Error fetching all participated-events:", error);
+    throw error
+  }
 };
 
 const fetchUserClubs = async () => {
@@ -53,12 +58,13 @@ const ClubCard = ({ club, onLeave }) => {
 };
 
 const UserActivities = () => {
-  const { data: userEvents, isLoading: eventsLoading } = useQuery({
+  const [user] = useFetchUser();
+  const { data: userEvents, isLoading: eventsLoading, errEvent } = useQuery({
     queryKey: ['userEvents'],
-    queryFn: fetchUserEvents,
+    queryFn: () => fetchUserEvents(user.id),
   });
 
-  const { data: userClubs, isLoading: clubsLoading } = useQuery({
+  const { data: userClubs, isLoading: clubsLoading, errClub } = useQuery({
     queryKey: ['userClubs'],
     queryFn: fetchUserClubs,
   });
@@ -73,7 +79,11 @@ const UserActivities = () => {
     console.log(`Leaving club with ID: ${clubId}`);
   };
 
-  if (eventsLoading || clubsLoading) return <div>Loading your activities...</div>;
+  if (eventsLoading || clubsLoading) return <div className='mt-10'>Loading your activities...</div>;
+
+  if (errEvent) return <div className='mt-10'>Error loading events: {errEvent.message}</div>;
+
+  if (!userEvents || userEvents.length === 0) return <div className='mt-10'>No events found.</div>;
 
   return (
     <div className="container mx-auto px-4 py-8">
