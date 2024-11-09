@@ -16,7 +16,7 @@ const Login = () => {
         expires: new Date(new Date().getTime() + 60 * 60 * 1000 * 24 * 3),
         sameSite: "strict",
       })
-
+      window.location.href = "/events";
       // You can now use the tokenResponse to authenticate the user in your app
     },
     onError: (error) => {

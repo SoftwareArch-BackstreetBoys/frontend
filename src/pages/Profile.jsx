@@ -2,7 +2,7 @@ import React from "react"
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { useFetchUser } from "@/utils/useFetchUser"
-import UserActivities from "./UserActivities"
+import UserActivities from "../components/profile/UserActivities"
 
 const Profile = () => {
   // Mock user data (replace with actual user data in a real application)
