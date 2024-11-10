@@ -17,7 +17,7 @@ export const createClub = async (clubData) => {
     });
 };
 export const updateClub = async (clubId, clubData) => {
-    return axios.put(`${process.env.REACT_APP_CLUB_ROUTE}/club/${clubId}`, clubData, {
+    return axios.patch(`${process.env.REACT_APP_CLUB_ROUTE}/club/${clubId}`, clubData, {
         withCredentials: true,
         headers: {
             'Content-Type': 'application/json',
