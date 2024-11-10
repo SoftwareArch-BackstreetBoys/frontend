@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 
-const SearchBar = ({ value, onChange, onSearch }) => {
+const SearchBar = ({ option, value, onChange, onSearch }) => {
     const handleKeyPress = (e) => {
         if (e.key === 'Enter') {
             onSearch();
@@ -16,7 +16,7 @@ const SearchBar = ({ value, onChange, onSearch }) => {
                 <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                 <Input
                     type="text"
-                    placeholder="Search events..."
+                    placeholder={option == 'event' ? "Search events..." : "Search clubs..."}
                     value={value}
                     onChange={onChange}
                     onKeyPress={handleKeyPress}

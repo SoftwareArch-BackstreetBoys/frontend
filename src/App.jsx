@@ -9,6 +9,7 @@ import Register from "./pages/Register"
 import Events from "./pages/Events"
 import Clubs from "./pages/Clubs"
 import Profile from "./pages/Profile"
+import ClubEvents from "./pages/ClubEvents"
 import { GoogleOAuthProvider } from "@react-oauth/google"
 
 const queryClient = new QueryClient()
@@ -28,6 +29,7 @@ const App = () => (
               <Route path="clubs" element={<Clubs />} />
               <Route path="profile" element={<Profile />} />
               {/* <Route path="my-activities" element={<UserActivities />} /> */}
+              <Route path="/clubs/:clubId" element={<ClubEvents />} />
             </Route>
           </Routes>
         </BrowserRouter>

@@ -192,6 +192,7 @@ const Events = () => {
       <h2 className="text-2xl font-bold mb-6">Event Timeline</h2>
       <div className="mb-6">
         <SearchBar
+          option='event'
           value={searchInput}
           onChange={handleSearchInput}
           onSearch={handleSearch}

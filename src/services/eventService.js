@@ -70,3 +70,20 @@ export const fetchUserEvents = async (userId) => {
         throw error
     }
 };
+export const fetchClubEvents = async (clubId) => {
+    try {
+        const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/club/${clubId}/events`);
+        return events.data.events;
+    } catch (error) {
+        console.error("Error fetching club events:", error);
+        throw error;
+    }
+};
+
+export const searchClubEvents = async (clubId, query) => {
+    const allEvents = await fetchClubEvents(clubId);
+    return allEvents.filter(event =>
+        event.title.toLowerCase().includes(query.toLowerCase()) ||
+        event.description.toLowerCase().includes(query.toLowerCase())
+    );
+};

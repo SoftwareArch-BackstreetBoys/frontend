@@ -2,9 +2,11 @@ import React, { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Link } from 'react-router-dom';
 import { CalendarIcon, Users } from 'lucide-react';
 import { useFetchUser } from '@/utils/useFetchUser';
 import { leaveEvent, fetchUserEvents } from '@/services/eventService';
+import { fetchUserClubs } from '@/services/clubService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,13 +17,6 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-
-const fetchUserClubs = async () => {
-  return [
-    { id: 'club1', name: 'Chess Club' },
-    { id: 'club2', name: 'Debate Society' },
-  ];
-};
 
 const EventCard = ({ event, onLeave }) => {
   const eventDate = new Date(event.datetime);
@@ -45,8 +40,12 @@ const ClubCard = ({ club, onLeave }) => {
   return (
     <Card className="mb-4 p-4">
       <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-semibold">{club.name}</h3>
-      </div>
+        <Link to={`/clubs/${club.id}`}>
+          <h3 className="text-xl font-semibold hover:underline cursor-pointer">
+            {club.name}
+          </h3>
+        </Link>      </div>
+      <p className="text-gray-600 mb-4">{club.description}</p>
       <Button onClick={() => onLeave(club)} className="bg-red-500 hover:bg-red-600">
         Leave Club
       </Button>
@@ -66,7 +65,7 @@ const UserActivities = () => {
 
   const { data: userClubs, isLoading: clubsLoading, error: errClub } = useQuery({
     queryKey: ['userClubs'],
-    queryFn: fetchUserClubs,
+    queryFn: () => fetchUserClubs(user.id),
   });
 
   const leaveEventMutation = useMutation({

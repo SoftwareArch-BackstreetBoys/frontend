@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Link } from 'react-router-dom';
 import { CalendarIcon, Users, MapPin, Clock, Pencil, Trash2 } from 'lucide-react';
 import {
     AlertDialog,
@@ -13,6 +14,7 @@ import {
     AlertDialogHeader,
     AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { getClubInfo } from '@/services/clubService';
 
 const EventCard = ({
     event,
@@ -26,8 +28,22 @@ const EventCard = ({
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
     const eventDate = new Date(event.datetime);
-    const isClubEvent = !!event.clubId;
+    const isClubEvent = !!event.club_id;
     const isCreator = currentUserId === event.created_by_id;
+    const [clubInfo, setClubInfo] = useState();
+
+    useEffect(() => {
+        const fetchClubInfo = async () => {
+            try {
+                const data = await getClubInfo(event.club_id);
+                setClubInfo(data);
+            } catch (err) {
+                console.error("Failed to fetch club info: ", err);
+            }
+        };
+        fetchClubInfo();
+    }, [event.club_id]);
+
     const handleActionClick = () => {
         if (isParticipant) {
             setShowLeaveDialog(true);
@@ -41,9 +57,11 @@ const EventCard = ({
                 <h3 className="text-xl font-semibold">{event.title}</h3>
                 <div className="flex gap-2 items-center">
                     {isClubEvent && (
-                        <Badge variant="secondary" className="bg-purple-100 text-purple-800">
-                            Club Event
-                        </Badge>
+                        <Link to={`/clubs/${event.club_id}`}>
+                            <Badge variant="secondary" className="bg-purple-100 text-purple-800 hover:ursor-pointer">
+                                {clubInfo?.name} Event
+                            </Badge>
+                        </Link>
                     )}
                     {isCreator && (
                         <div className="flex gap-2">
@@ -84,11 +102,11 @@ const EventCard = ({
                 <Users className="mr-2 h-4 w-4" />
                 <span>{event.cur_participation || 0} / {event.max_participation} participants</span>
             </div>
-            {isClubEvent && (
+            {/* {isClubEvent && (
                 <div className="text-purple-600 mb-2">
-                    Club: {event.clubId}
+                    Club: {clubInfo?.name}
                 </div>
-            )}
+            )} */}
             <div className="text-gray-600 mb-4">
                 Created by: {event.created_by_name}
             </div>
@@ -113,7 +131,8 @@ const EventCard = ({
             <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Are you sure you want to leave this event?</AlertDialogTitle>
+                        <AlertDialogTitle>Are you sure you want to leave this event? <br />
+                            <strong>{event.title}</strong></AlertDialogTitle>
                         <AlertDialogDescription>
                             This action cannot be undone. You may not be able to rejoin if the event becomes full.
                         </AlertDialogDescription>
@@ -127,9 +146,10 @@ const EventCard = ({
             <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>
-                        <AlertDialogTitle>Delete Event</AlertDialogTitle>
+                        <AlertDialogTitle>Delete Event <br />
+                            <strong>{event.title}</strong></AlertDialogTitle>
                         <AlertDialogDescription>
-                            Are you sure you want to delete this event? This action cannot be undone.
+                            Are you sure you want to delete this event?
                         </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>

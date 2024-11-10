@@ -1,176 +1,216 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import axios from 'axios';
-import { Search } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-
-const fetchClubs = async () => {
-  // Simulating API call
-  // return [
-  //   { id: 'club1', name: 'Chess Club', description: 'For chess enthusiasts' },
-  //   { id: 'club2', name: 'Debate Society', description: 'Improve your public speaking skills' },
-  //   { id: 'club3', name: 'Robotics Club', description: 'Build and program robots' },
-  // ];
-  try {
-    const clubs = await axios.get(`${process.env.REACT_APP_CLUB_ROUTE}/clubs`);
-    return clubs.data
-  } catch (error) {
-    console.error("Error fetching clubs:", error);
-    throw error
-  }
-};
-
-const joinClub = async (clubId) => {
-  // Mock implementation
-  console.log(`Joined club with ID: ${clubId}`);
-  // In a real implementation, this would make an API call to join the club
-};
-
-const leaveClub = async (clubId) => {
-  // Mock implementation
-  console.log(`Left club with ID: ${clubId}`);
-  // In a real implementation, this would make an API call to leave the club
-};
-
-const searchClubs = async (query) => {
-  // Mock implementation
-  const allClubs = await fetchClubs();
-  return allClubs.filter(club =>
-    club.name.toLowerCase().includes(query.toLowerCase()) ||
-    club.description.toLowerCase().includes(query.toLowerCase())
-  );
-};
-
-const ClubCard = ({ club, onJoin, onLeave, isMember }) => {
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-
-  const handleLeaveClick = () => {
-    if (isMember) {
-      setShowLeaveDialog(true);
-    } else {
-      onJoin(club.id);
-    }
-  };
-
-  return (
-    <Card className="mb-4 p-4">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-semibold">{club.name}</h3>
-      </div>
-      <p className="text-gray-600 mb-4">{club.description}</p>
-      <Button
-        onClick={handleLeaveClick}
-        className={isMember ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
-      >
-        {isMember ? 'Leave Club' : 'Join Club'}
-      </Button>
-      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Are you sure you want to leave this club?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. You'll need to rejoin if you change your mind.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={() => onLeave(club.id)}>Leave Club</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-    </Card>
-  );
-};
-
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { useToast } from "@/components/ui/use-toast";
+import { useFetchUser } from '@/utils/useFetchUser';
+import ClubCard from '@/components/club/ClubCard';
+import ClubForm from '@/components/club/ClubForm';
+import SearchBar from '@/components/event/SearchBar';
+import * as clubService from '@/services/clubService';
 const Clubs = () => {
+  const [user] = useFetchUser();
+  const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [userClubs, setUserClubs] = useState([]);  // In a real app, this would be fetched from the backend
+  const [userClubs, setUserClubs] = useState([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingClub, setEditingClub] = useState(null);
   const queryClient = useQueryClient();
-
+  const { toast } = useToast();
+  const initialFormData = {
+    name: '',
+    description: '',
+  };
+  const [formData, setFormData] = useState(initialFormData);
+  useEffect(() => {
+    const initializeUserClubs = async () => {
+      if (!user?.id) return;
+      try {
+        const clubs = await clubService.fetchUserClubs(user.id);
+        const clubIds = clubs.map((club) => club.id);
+        setUserClubs(clubIds);
+      } catch (error) {
+        console.error("Error initializing user clubs:", error);
+      }
+    };
+    initializeUserClubs();
+  }, [user]);
   const { data: clubs, isLoading, error } = useQuery({
     queryKey: ['clubs', searchQuery],
-    queryFn: () => searchQuery ? searchClubs(searchQuery) : fetchClubs(),
+    queryFn: () => searchQuery ? clubService.searchClubs(searchQuery) : clubService.fetchClubs(),
   });
-
+  const createClubMutation = useMutation({
+    mutationFn: clubService.createClub,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+      toast({
+        title: "Club created successfully!",
+        description: "Your club has been created.",
+      });
+      setDialogOpen(false);
+      setFormData(initialFormData);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error creating club",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  const updateClubMutation = useMutation({
+    mutationFn: ({ id, data }) => clubService.updateClub(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+      toast({
+        title: "Club updated successfully!",
+        description: "Your club has been updated.",
+      });
+      setDialogOpen(false);
+      setEditingClub(null);
+      setFormData(initialFormData);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating club",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+  const deleteClubMutation = useMutation({
+    mutationFn: clubService.deleteClub,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+      toast({
+        title: "Club deleted successfully!",
+        description: "The club has been removed.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Error deleting club",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
   const joinMutation = useMutation({
-    mutationFn: joinClub,
-    onSuccess: (data, clubId) => {
+    mutationFn: clubService.joinClub,
+    onSuccess: (data, { clubId }) => {
       setUserClubs([...userClubs, clubId]);
       queryClient.invalidateQueries(['clubs']);
     },
   });
-
   const leaveMutation = useMutation({
-    mutationFn: leaveClub,
-    onSuccess: (data, clubId) => {
+    mutationFn: clubService.leaveClub,
+    onSuccess: (data, { clubId }) => {
       setUserClubs(userClubs.filter(id => id !== clubId));
       queryClient.invalidateQueries(['clubs']);
     },
   });
-
-  const handleSearch = (e) => {
-    setSearchQuery(e.target.value);
+  const handleSearchInput = (e) => {
+    setSearchInput(e.target.value);
   };
-
-  const handleJoinClub = (clubId) => {
-    joinMutation.mutate(clubId);
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
   };
-
-  const handleLeaveClub = (clubId) => {
-    leaveMutation.mutate(clubId);
+  const handleEditClub = (club) => {
+    setEditingClub(club);
+    setFormData({
+      name: club.name,
+      description: club.description,
+    });
+    setDialogOpen(true);
   };
-
-  if (isLoading) {
-    return <p>Loading clubs...</p>;
-  }
-
-  if (error) {
-    return <p>Error loading clubs.</p>;
-  }
-
-  if (!clubs || clubs.length === 0) {
-    return <p>No clubs found.</p>;
-  }
-
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const clubData = {
+      ...formData,
+      created_by_id: user?.id,
+      created_by_name: user?.fullName,
+    };
+    if (editingClub) {
+      updateClubMutation.mutate({ id: editingClub.id, data: clubData });
+    } else {
+      createClubMutation.mutate(clubData);
+    }
+  };
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  if (isLoading) return <div>Loading clubs...</div>;
   return (
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Clubs</h2>
       <div className="mb-6">
-        <Input
-          type="text"
-          placeholder="Search clubs..."
-          value={searchQuery}
-          onChange={handleSearch}
-          className="w-full"
-          icon={<Search className="h-4 w-4" />}
+        <SearchBar
+          option='club'
+          value={searchInput}
+          onChange={handleSearchInput}
+          onSearch={handleSearch}
         />
       </div>
+      {error && <div className="text-red-500 mb-4">Error loading clubs: {error.message}</div>}
+      {clubs?.length === 0 && !isLoading && !error && (
+        <div className="text-gray-500">No clubs found. Please try a different search.</div>
+      )}
       <div className="space-y-6">
-        {clubs.map(club => (
+        {clubs?.map((club) => (
           <ClubCard
             key={club.id}
             club={club}
-            onJoin={handleJoinClub}
-            onLeave={handleLeaveClub}
+            onJoin={() => joinMutation.mutate({ clubId: club.id, user_id: user?.id })}
+            onLeave={() => leaveMutation.mutate({ clubId: club.id, user_id: user?.id })}
+            onEdit={handleEditClub}
+            onDelete={deleteClubMutation.mutate}
             isMember={userClubs.includes(club.id)}
+            isCreator={user?.id === club.created_by_id}
           />
         ))}
       </div>
+      {user && (
+        <div>
+          <Button
+            className="fixed bottom-8 right-8 shadow-lg rounded-full py-6 bg-green-500 hover:bg-green-400"
+            onClick={() => {
+              setEditingClub(null);
+              setFormData(initialFormData);
+              setDialogOpen(true);
+            }}
+          >
+            <Plus className="h-6 w-6 mr-2" />
+            New Club
+          </Button>
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle className="mb-2">
+                  {editingClub ? 'Edit Club' : 'Create New Club'}
+                </DialogTitle>
+              </DialogHeader>
+              <ClubForm
+                formData={formData}
+                handleChange={handleChange}
+                handleSubmit={handleFormSubmit}
+                isSubmitting={createClubMutation.isPending || updateClubMutation.isPending}
+                submitText={editingClub ? 'Update Club' : 'Create Club'}
+              />
+            </DialogContent>
+          </Dialog>
+        </div>
+      )}
     </div>
   );
 };
-
-
 export default Clubs;
