@@ -5,8 +5,11 @@ import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { CalendarIcon, Users } from 'lucide-react';
 import { useFetchUser } from '@/utils/useFetchUser';
-import { leaveEvent, fetchUserEvents } from '@/services/eventService';
-import { fetchUserClubs } from '@/services/clubService';
+import { useToast } from "@/components/ui/use-toast";
+// import EventCard from '@/components/event/EventCard';
+import EventForm from '@/components/event/EventForm';
+import * as eventService from '@/services/eventService';
+import { fetchUserClubs, leaveClub } from '@/services/clubService';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -19,6 +22,7 @@ import {
 } from "@/components/ui/alert-dialog";
 
 const EventCard = ({ event, onLeave }) => {
+  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const eventDate = new Date(event.datetime);
   return (
     <Card className="mb-4 p-4">
@@ -60,22 +64,29 @@ const UserActivities = () => {
 
   const { data: userEvents, isLoading: eventsLoading, error: errEvent, refetch: refetchEvents } = useQuery({
     queryKey: ['userEvents'],
-    queryFn: () => fetchUserEvents(user.id),
+    queryFn: () => eventService.fetchUserEvents(user.id),
   });
 
-  const { data: userClubs, isLoading: clubsLoading, error: errClub } = useQuery({
+  const { data: userClubs, isLoading: clubsLoading, error: errClub, refetch: refetchClubs } = useQuery({
     queryKey: ['userClubs'],
     queryFn: () => fetchUserClubs(user.id),
   });
 
   const leaveEventMutation = useMutation({
-    mutationFn: leaveEvent,
+    mutationFn: eventService.leaveEvent,
     onSuccess: () => {
       // Refetch events after leaving an event
       refetchEvents();
     },
     onError: (error) => {
       console.error("Error leaving event:", error);
+    },
+  });
+
+  const leaveMutation = useMutation({
+    mutationFn: leaveClub,
+    onSuccess: (data, { clubId }) => {
+      refetchClubs();
     },
   });
 
@@ -93,8 +104,7 @@ const UserActivities = () => {
     if (selectedActivity.type === 'event') {
       leaveEventMutation.mutate({ eventId: selectedActivity.id, user_id: user?.id });
     } else if (selectedActivity.type === 'club') {
-      // Handle leaving club (implement actual logic)
-      console.log(`Leaving club with ID: ${selectedActivity.id}`);
+      leaveMutation.mutate({ clubId: selectedActivity.id, user_id: user?.id })
     }
     setShowLeaveDialog(false);
   };
