@@ -76,10 +76,13 @@ export const fetchUserClubs = async (userId) => {
 };
 export const getClubInfo = async (clubId) => {
     try {
-        const clubs = await axios.get(`${process.env.REACT_APP_CLUB_ROUTE}/club/${clubId}`);
-        return clubs.data;
+        if (clubId) {
+            const clubs = await axios.get(`${process.env.REACT_APP_CLUB_ROUTE}/club/${clubId}`);
+            return clubs.data;
+        }
+        return
     } catch (error) {
-        console.error("Error getClubInfo:", error);
+        // console.error("Error getClubInfo:", error);
         throw error;
     }
 }

@@ -51,7 +51,7 @@ const Events = () => {
       try {
         const clubs = await fetchUserClubs(user.id);
         const clubIds = clubs.map((club) => club.id);
-        console.log("CLUBIDS:", clubIds)
+        // console.log("CLUBIDS:", clubIds)
         setUserClubs(clubIds);
       } catch (error) {
         console.error("Error initializing user clubs:", error);

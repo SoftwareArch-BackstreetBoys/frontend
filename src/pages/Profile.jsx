@@ -7,7 +7,7 @@ import UserActivities from "../components/profile/UserActivities"
 const Profile = () => {
   // Mock user data (replace with actual user data in a real application)
   const [user] = useFetchUser()
-  console.log(user)
+  // console.log(user)
 
   return (
     <div>

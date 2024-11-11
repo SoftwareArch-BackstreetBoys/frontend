@@ -38,7 +38,7 @@ const EventCard = ({
                 const data = await getClubInfo(event.club_id);
                 setClubInfo(data);
             } catch (err) {
-                console.error("Failed to fetch club info: ", err);
+                // console.error("Failed to fetch club info: ", err);
             }
         };
         fetchClubInfo();
