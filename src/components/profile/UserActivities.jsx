@@ -210,33 +210,6 @@ const UserActivities = () => {
         )}
       </div>
 
-      {/* AlertDialog for leaving event/club */}
-      {/* <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {selectedActivity?.type === 'event' ? (
-                <>
-                  Are you sure you want to leave this event? <br />
-                  <strong>{selectedActivity?.title}</strong>
-                </>
-              ) : (
-                <>
-                  Are you sure you want to leave the club? <br />
-                  <strong>{selectedActivity?.name}</strong>
-                </>
-              )}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              This action cannot be undone. You may not be able to rejoin if the event becomes full.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction className='bg-red-600 hover:bg-red-500' onClick={handleLeaveConfirm}>Leave</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog> */}
     </div>
   );
 };
