@@ -1,9 +1,5 @@
 import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Link } from 'react-router-dom';
-import { CalendarIcon, Users } from 'lucide-react';
 import { useFetchUser } from '@/utils/useFetchUser';
 import { useToast } from "@/components/ui/use-toast";
 import EventCard from '@/components/event/EventCard';
@@ -11,60 +7,26 @@ import EventForm from '@/components/event/EventForm';
 import ClubForm from '../club/ClubForm';
 import ClubCard from '../club/ClubCard';
 import * as eventService from '@/services/eventService';
-import { fetchUserClubs, leaveClub } from '@/services/clubService';
+import { fetchUserClubs, leaveClub, updateClub } from '@/services/clubService';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 
-// const EventCard = ({ event, onLeave }) => {
-//   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-//   const eventDate = new Date(event.datetime);
-//   return (
-//     <Card className="mb-4 p-4">
-//       <div className="flex justify-between items-start mb-2">
-//         <h3 className="text-xl font-semibold">{event.title}</h3>
-//       </div>
-//       <div className="flex items-center text-gray-600 mb-2">
-//         <CalendarIcon className="mr-2 h-4 w-4" />
-//         <span>{eventDate.toLocaleDateString()} {eventDate.toLocaleTimeString()}</span>
-//       </div>
-//       <Button onClick={() => onLeave(event)} className="bg-red-500 hover:bg-red-600">
-//         Leave Event
-//       </Button>
-//     </Card>
-//   );
-// };
-
-// const ClubCard = ({ club, onLeave }) => {
-//   return (
-//     <Card className="mb-4 p-4">
-//       <div className="flex justify-between items-start mb-2">
-//         <Link to={`/clubs/${club.id}`}>
-//           <h3 className="text-xl font-semibold hover:underline cursor-pointer">
-//             {club.name}
-//           </h3>
-//         </Link>      </div>
-//       <p className="text-gray-600 mb-4">{club.description}</p>
-//       <Button onClick={() => onLeave(club)} className="bg-red-500 hover:bg-red-600">
-//         Leave Club
-//       </Button>
-//     </Card>
-//   );
-// };
 
 const UserActivities = () => {
   const [user] = useFetchUser();
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const [selectedActivity, setSelectedActivity] = useState(null); // To track selected event/club
+  const [dialogClubOpen, setDialogClubOpen] = useState(false);
+  const [editingClub, setEditingClub] = useState(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const initialClubFormData = {
+    name: '',
+    description: '',
+  };
+  const [clubFormData, setClubFormData] = useState(initialClubFormData);
 
   const { data: hostedEvents = [], isLoading: hostedEventsLoading, error: errHostedEvent, refetch: refetchHostedEvents } = useQuery({
     queryKey: ['hostedEvents'],
@@ -103,6 +65,27 @@ const UserActivities = () => {
       });
     },
   });
+  const updateClubMutation = useMutation({
+    mutationFn: ({ id, data }) => updateClub(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['clubs'] });
+      toast({
+        title: "Club updated successfully!",
+        description: "Your club has been updated.",
+      });
+      setDialogClubOpen(false);
+      setEditingClub(null);
+      setClubFormData(initialClubFormData);
+      refetchClubs();
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating club",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   const leaveClubMutation = useMutation({
     mutationFn: leaveClub,
@@ -110,27 +93,36 @@ const UserActivities = () => {
       refetchClubs();
     },
   });
-
-  const handleLeaveConfirm = () => {
-    if (selectedActivity.type === 'event') {
-      leaveEventMutation.mutate({ eventId: selectedActivity.id, user_id: user?.id });
-    } else if (selectedActivity.type === 'club') {
-      leaveClubMutation.mutate({ clubId: selectedActivity.id, user_id: user?.id })
+  const handleClubFormSubmit = (e) => {
+    e.preventDefault();
+    const clubData = {
+      ...clubFormData,
+      created_by_id: user?.id,
+      created_by_name: user?.fullName,
+    };
+    if (editingClub) {
+      updateClubMutation.mutate({ id: editingClub.id, data: clubData });
+    } else {
+      // createClubMutation.mutate(clubData);
     }
-    setShowLeaveDialog(false);
+  };
+  const handleClubChange = (e) => {
+    const { name, value } = e.target;
+    setClubFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
   };
 
-  // if (hostedEventsLoading || participatedEventsLoading || clubsLoading) return <div className='mt-10'>Loading your activities...</div>;
+  const handleEditClub = (club) => {
+    setEditingClub(club);
+    setClubFormData({
+      name: club.name,
+      description: club.description,
+    });
+    setDialogClubOpen(true);
+  };
 
-  // if (errHostedEvent) return <div className='mt-10'>Error loading hosted events: {errHostedEvent.message}</div>;
-
-  // if (errParticipatedEvent) return <div className='mt-10'>Error loading participated events: {errParticipatedEvent.message}</div>;
-
-  // if (errClub) return <div className='mt-10'>Error loading clubs: {errClub.message}</div>;
-
-  // if ((!hostedEvents || hostedEvents.length === 0) && (!participatedEvents || participatedEvents.length === 0) && (!userClubs || userClubs.length === 0)) {
-  //   return <div className='mt-10'>No activities found.</div>;
-  // }
   if (hostedEventsLoading && participatedEventsLoading && clubsLoading) {
     return <div className='mt-10'>Loading your activities...</div>;
   }
@@ -201,6 +193,7 @@ const UserActivities = () => {
               club={club}
               onJoin={() => { }}
               onLeave={() => leaveClubMutation.mutate({ clubId: club.id, user_id: user?.id })}
+              onEdit={handleEditClub}
               isMember={true}
               isCreator={user?.id === club.created_by_id}
             />
@@ -209,7 +202,22 @@ const UserActivities = () => {
           <div className="text-gray-500 mb-4">No clubs found.</div>
         )}
       </div>
-
+      <Dialog open={dialogClubOpen} onOpenChange={setDialogClubOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="mb-2">
+              {editingClub ? 'Edit Club' : 'Create New Club'}
+            </DialogTitle>
+          </DialogHeader>
+          <ClubForm
+            formData={clubFormData}
+            handleChange={handleClubChange}
+            handleSubmit={handleClubFormSubmit}
+            isSubmitting={updateClubMutation.isPending}
+            submitText={editingClub ? 'Update Club' : 'Create Club'}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
