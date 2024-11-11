@@ -13,13 +13,15 @@ export const fetchEvents = async (joined_club_ids) => {
         // Combine both arrays
         const allEvents = [...public_events, ...joined_club_events];
 
-        // Sort the combined array by `created_at` in descending order
-        const sortedEvents = allEvents.sort((a, b) => {
-            // Compare based on `created_at.seconds` and `created_at.nanos`
-            if (b.created_at.seconds === a.created_at.seconds) {
-                return b.created_at.nanos - a.created_at.nanos;
-            }
-            return b.created_at.seconds - a.created_at.seconds;
+        // Filter out events that are in the past
+        const futureEvents = allEvents.filter(event => new Date(event.datetime) > new Date());
+
+        // Sort the remaining future events by `datetime` in ascending order (nearest event first)
+        const sortedEvents = futureEvents.sort((a, b) => {
+            // Convert `datetime` strings to Date objects for comparison
+            const dateA = new Date(a.datetime);
+            const dateB = new Date(b.datetime);
+            return dateA - dateB; // Sort in ascending order (nearest first)
         });
 
         return sortedEvents; // Return the sorted array
@@ -84,7 +86,17 @@ export const fetchHostedEvents = async (userId) => {
     try {
         const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/user/${userId}/events`);
         // console.log("participated events:", events.data.events)
-        return events.data.events
+        // Filter out events that are in the past
+        const futureEvents = events.data.events.filter(event => new Date(event.datetime) > new Date());
+
+        // Sort the remaining future events by `datetime` in ascending order (nearest event first)
+        const sortedEvents = futureEvents.sort((a, b) => {
+            // Convert `datetime` strings to Date objects for comparison
+            const dateA = new Date(a.datetime);
+            const dateB = new Date(b.datetime);
+            return dateA - dateB; // Sort in ascending order (nearest first)
+        });
+        return sortedEvents
     } catch (error) {
         console.error("Error fetching all participated-events:", error);
         throw error
@@ -94,7 +106,17 @@ export const fetchParticipatedEvents = async (userId) => {
     try {
         const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/user/${userId}/participated-events`);
         // console.log("participated events:", events.data.events)
-        return events.data.events
+        // Filter out events that are in the past
+        const futureEvents = events.data.events.filter(event => new Date(event.datetime) > new Date());
+
+        // Sort the remaining future events by `datetime` in ascending order (nearest event first)
+        const sortedEvents = futureEvents.sort((a, b) => {
+            // Convert `datetime` strings to Date objects for comparison
+            const dateA = new Date(a.datetime);
+            const dateB = new Date(b.datetime);
+            return dateA - dateB; // Sort in ascending order (nearest first)
+        });
+        return sortedEvents
     } catch (error) {
         console.error("Error fetching all participated-events:", error);
         throw error
@@ -103,7 +125,17 @@ export const fetchParticipatedEvents = async (userId) => {
 export const fetchClubEvents = async (clubId) => {
     try {
         const events = await axios.get(`${process.env.REACT_APP_EVENT_ROUTE}/club/${clubId}/events`);
-        return events.data.events;
+        // Filter out events that are in the past
+        const futureEvents = events.data.events.filter(event => new Date(event.datetime) > new Date());
+
+        // Sort the remaining future events by `datetime` in ascending order (nearest event first)
+        const sortedEvents = futureEvents.sort((a, b) => {
+            // Convert `datetime` strings to Date objects for comparison
+            const dateA = new Date(a.datetime);
+            const dateB = new Date(b.datetime);
+            return dateA - dateB; // Sort in ascending order (nearest first)
+        });
+        return sortedEvents
     } catch (error) {
         console.error("Error fetching club events:", error);
         throw error;
