@@ -18,10 +18,21 @@ import {
 
 const UserActivities = () => {
   const [user] = useFetchUser();
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState(null);
   const [dialogClubOpen, setDialogClubOpen] = useState(false);
   const [editingClub, setEditingClub] = useState(null);
   const queryClient = useQueryClient();
   const { toast } = useToast();
+  const initialFormData = {
+    title: '',
+    description: '',
+    datetime: '',
+    location: '',
+    max_participation: 0,
+    club_id: '',
+  };
+  const [formData, setFormData] = useState(initialFormData);
   const initialClubFormData = {
     name: '',
     description: '',
@@ -43,6 +54,7 @@ const UserActivities = () => {
     queryFn: () => fetchUserClubs(user.id),
   });
 
+  // Event Mutation
   const leaveEventMutation = useMutation({
     mutationFn: eventService.leaveEvent,
     onSuccess: () => {
@@ -54,7 +66,6 @@ const UserActivities = () => {
       console.error("Error leaving event:", error);
     },
   });
-
   const deleteEventMutation = useMutation({
     mutationFn: eventService.deleteEvent,
     onSuccess: () => {
@@ -63,6 +74,35 @@ const UserActivities = () => {
         title: "Event deleted successfully",
         description: "The event has been removed.",
       });
+    },
+  });
+  const updateEventMutation = useMutation({
+    mutationFn: ({ id, data }) => eventService.updateEvent(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['events'] });
+      toast({
+        title: "Event updated successfully!",
+        description: "Your event has been updated.",
+      });
+      refetchHostedEvents();
+      setDialogOpen(false);
+      setEditingEvent(null);
+      setFormData(initialFormData);
+    },
+    onError: (error) => {
+      toast({
+        title: "Error updating event",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Club Mutation
+  const leaveClubMutation = useMutation({
+    mutationFn: leaveClub,
+    onSuccess: (data, { clubId }) => {
+      refetchClubs();
     },
   });
   const updateClubMutation = useMutation({
@@ -87,12 +127,42 @@ const UserActivities = () => {
     },
   });
 
-  const leaveClubMutation = useMutation({
-    mutationFn: leaveClub,
-    onSuccess: (data, { clubId }) => {
-      refetchClubs();
-    },
-  });
+  // Event Handle
+  const handleEditEvent = (event) => {
+    setEditingEvent(event);
+    setFormData({
+      title: event.title,
+      description: event.description,
+      datetime: event.datetime,
+      location: event.location,
+      max_participation: event.max_participation,
+      club_id: event.club_id || '',
+    });
+    setDialogOpen(true);
+  }
+  const handleFormSubmit = (e) => {
+    e.preventDefault();
+    const eventData = {
+      ...formData,
+      max_participation: parseInt(formData.max_participation),
+      created_by_id: user.id,
+      created_by_name: user.fullName,
+    };
+    if (editingEvent) {
+      updateEventMutation.mutate({ id: editingEvent.id, data: eventData });
+    } else {
+      // createEventMutation.mutate(eventData);
+    }
+  }
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Club Handle
   const handleClubFormSubmit = (e) => {
     e.preventDefault();
     const clubData = {
@@ -113,7 +183,6 @@ const UserActivities = () => {
       [name]: value
     }));
   };
-
   const handleEditClub = (club) => {
     setEditingClub(club);
     setClubFormData({
@@ -123,6 +192,7 @@ const UserActivities = () => {
     setDialogClubOpen(true);
   };
 
+  // Loading...
   if (hostedEventsLoading && participatedEventsLoading && clubsLoading) {
     return <div className='mt-10'>Loading your activities...</div>;
   }
@@ -150,7 +220,7 @@ const UserActivities = () => {
             event={event}
             onJoin={() => { }}
             onLeave={() => leaveEventMutation.mutate({ eventId: event.id, user_id: user?.id })}
-            onEdit={isHosted ? () => { } : undefined}
+            onEdit={isHosted ? handleEditEvent : () => undefined}
             onDelete={isHosted ? (id) => deleteEventMutation.mutate(id) : undefined}
             isParticipant={true}
             currentUserId={user?.id}
@@ -202,6 +272,24 @@ const UserActivities = () => {
           <div className="text-gray-500 mb-4">No clubs found.</div>
         )}
       </div>
+      {/* Edit Event Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle className="mb-2">
+              {editingEvent ? 'Edit Event' : 'Create New Event'}
+            </DialogTitle>
+          </DialogHeader>
+          <EventForm
+            formData={formData}
+            handleChange={handleChange}
+            handleSubmit={handleFormSubmit}
+            isSubmitting={updateEventMutation.isPending}
+            submitText={editingEvent ? 'Update Event' : 'Create Event'}
+          />
+        </DialogContent>
+      </Dialog>
+      {/* Edit Club Dialog */}
       <Dialog open={dialogClubOpen} onOpenChange={setDialogClubOpen}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

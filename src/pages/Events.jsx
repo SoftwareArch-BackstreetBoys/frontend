@@ -176,11 +176,6 @@ const Events = () => {
     setSearchQuery(searchInput);
   };
 
-  // const handleSearch = (e) => {
-  //   console.log("ping:", e.target.value)
-  //   setSearchQuery(e.target.value);
-  // };
-
   const handleEditEvent = (event) => {
     setEditingEvent(event);
     setFormData({
