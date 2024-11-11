@@ -14,6 +14,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 
 
 const UserActivities = () => {
@@ -207,8 +213,7 @@ const UserActivities = () => {
   }
 
   const renderEventSection = (title, events, isLoading, error, isHosted = false) => (
-    <div className="mb-8">
-      <h3 className="text-xl font-semibold mb-4">{title}</h3>
+    <div className="mb-2">
       {isLoading ? (
         <div className="text-gray-500">Loading events...</div>
       ) : error ? (
@@ -235,43 +240,66 @@ const UserActivities = () => {
   return (
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Your Activities</h2>
-      {renderEventSection(
-        "Hosted Events",
-        hostedEvents,
-        hostedEventsLoading,
-        errHostedEvent,
-        true
-      )}
+      <Accordion type="multiple" defaultValue={["hosted", "participated", "clubs"]} className="w-full space-y-4">
+        <AccordionItem value="hosted">
+          <AccordionTrigger className="text-xl font-semibold">
+            Hosted Events
+            {hostedEventsLoading && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
+          </AccordionTrigger>
+          <AccordionContent>
+            {renderEventSection(
+              "",
+              hostedEvents,
+              hostedEventsLoading,
+              errHostedEvent,
+              true
+            )}
+          </AccordionContent>
+        </AccordionItem>
 
-      {renderEventSection(
-        "Participated Events",
-        participatedEvents,
-        participatedEventsLoading,
-        errParticipatedEvent
-      )}
-      {/* Club */}
-      <div>
-        <h3 className="text-xl font-semibold mb-4">Clubs</h3>
-        {errClub ? (
-          <div className="text-red-500 mb-4">Error loading clubs: {errClub.message}</div>
-        ) : clubsLoading ? (
-          <div className="text-gray-500 mb-4">Loading clubs...</div>
-        ) : userClubs?.length > 0 ? (
-          userClubs.map(club => (
-            <ClubCard
-              key={club.id}
-              club={club}
-              onJoin={() => { }}
-              onLeave={() => leaveClubMutation.mutate({ clubId: club.id, user_id: user?.id })}
-              onEdit={handleEditClub}
-              isMember={true}
-              isCreator={user?.id === club.created_by_id}
-            />
-          ))
-        ) : (
-          <div className="text-gray-500 mb-4">No clubs found.</div>
-        )}
-      </div>
+        <AccordionItem value="participated">
+          <AccordionTrigger className="text-xl font-semibold">
+            Participated Events
+            {participatedEventsLoading && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
+          </AccordionTrigger>
+          <AccordionContent>
+            {renderEventSection(
+              "",
+              participatedEvents,
+              participatedEventsLoading,
+              errParticipatedEvent
+            )}
+          </AccordionContent>
+        </AccordionItem>
+
+        <AccordionItem value="clubs">
+          <AccordionTrigger className="text-xl font-semibold">
+            Clubs
+            {clubsLoading && <span className="ml-2 text-sm text-gray-500">(Loading...)</span>}
+          </AccordionTrigger>
+          <AccordionContent>
+            {errClub ? (
+              <div className="text-red-500 mb-4">Error loading clubs: {errClub.message}</div>
+            ) : clubsLoading ? (
+              <div className="text-gray-500 mb-4">Loading clubs...</div>
+            ) : userClubs?.length > 0 ? (
+              userClubs.map(club => (
+                <ClubCard
+                  key={club.id}
+                  club={club}
+                  onJoin={() => { }}
+                  onLeave={() => leaveClubMutation.mutate({ clubId: club.id, user_id: user?.id })}
+                  onEdit={handleEditClub}
+                  isMember={true}
+                  isCreator={user?.id === club.created_by_id}
+                />
+              ))
+            ) : (
+              <div className="text-gray-500 mb-4">No clubs found.</div>
+            )}
+          </AccordionContent>
+        </AccordionItem>
+      </Accordion>
       {/* Edit Event Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
