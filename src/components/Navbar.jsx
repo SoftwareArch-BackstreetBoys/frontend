@@ -36,7 +36,7 @@ const Navbar = () => {
     <nav className="bg-white shadow-md">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center py-4">
-          <Link to="/" className="text-xl font-bold text-pink-600">Meet and Feat</Link>
+          <Link to="/" className="flex flex-row items-center"><img src="icon.svg" className='w-8 h-8'></img><p className='text-xl font-bold text-pink-600 ml-2'>Meet and Feat</p></Link>
           <div className="space-x-4">
             <Link to="/events">
               <Button variant="ghost">Events</Button>
