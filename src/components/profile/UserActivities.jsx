@@ -111,16 +111,6 @@ const UserActivities = () => {
     },
   });
 
-  const handleLeaveEvent = (event) => {
-    setSelectedActivity({ type: 'event', id: event.id, title: event.title });
-    setShowLeaveDialog(true);
-  };
-
-  const handleLeaveClub = (club) => {
-    setSelectedActivity({ type: 'club', id: club.id, name: club.name });
-    setShowLeaveDialog(true);
-  };
-
   const handleLeaveConfirm = () => {
     if (selectedActivity.type === 'event') {
       leaveEventMutation.mutate({ eventId: selectedActivity.id, user_id: user?.id });
@@ -167,7 +157,7 @@ const UserActivities = () => {
             key={event.id}
             event={event}
             onJoin={() => { }}
-            onLeave={() => leaveEventMutation.mutate(event.id)}
+            onLeave={() => leaveEventMutation.mutate({ eventId: event.id, user_id: user?.id })}
             onEdit={isHosted ? () => { } : undefined}
             onDelete={isHosted ? (id) => deleteEventMutation.mutate(id) : undefined}
             isParticipant={true}
@@ -210,7 +200,7 @@ const UserActivities = () => {
               key={club.id}
               club={club}
               onJoin={() => { }}
-              onLeave={handleLeaveClub}
+              onLeave={() => leaveClubMutation.mutate({ clubId: club.id, user_id: user?.id })}
               isMember={true}
               isCreator={user?.id === club.created_by_id}
             />
@@ -221,7 +211,7 @@ const UserActivities = () => {
       </div>
 
       {/* AlertDialog for leaving event/club */}
-      <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
+      {/* <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
@@ -246,7 +236,7 @@ const UserActivities = () => {
             <AlertDialogAction className='bg-red-600 hover:bg-red-500' onClick={handleLeaveConfirm}>Leave</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
-      </AlertDialog>
+      </AlertDialog> */}
     </div>
   );
 };
