@@ -16,6 +16,7 @@ import EventCard from '@/components/event/EventCard';
 import EventForm from '@/components/event/EventForm';
 import SearchBar from '@/components/event/SearchBar';
 import * as eventService from '@/services/eventService';
+import { fetchUserClubs } from '@/services/clubService';
 
 const Events = () => {
   const [user] = useFetchUser();
@@ -24,6 +25,7 @@ const Events = () => {
   const [userEvents, setUserEvents] = useState([]);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState(null);
+  const [userClubs, setUserClubs] = useState([]);
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -32,7 +34,7 @@ const Events = () => {
       if (!user || !user.id) return; // Wait for `user` to be available
 
       try {
-        const events = await eventService.fetchUserEvents(user.id); // Fetch full event data
+        const events = await eventService.fetchParticipatedEvents(user.id); // Fetch full event data
         const eventIds = events.map((event) => event.id); // Extract only the IDs
         setUserEvents(eventIds); // Set userEvents to array of IDs
       } catch (error) {
@@ -42,6 +44,21 @@ const Events = () => {
 
     initializeUserEvents();
   }, [user]); // Add `user` as a dependency to rerun when `user` changes
+
+  useEffect(() => {
+    const initializeUserClubs = async () => {
+      if (!user?.id) return;
+      try {
+        const clubs = await fetchUserClubs(user.id);
+        const clubIds = clubs.map((club) => club.id);
+        console.log("CLUBIDS:", clubIds)
+        setUserClubs(clubIds);
+      } catch (error) {
+        console.error("Error initializing user clubs:", error);
+      }
+    };
+    initializeUserClubs();
+  }, [user]);
 
   const initialFormData = {
     title: '',
@@ -54,8 +71,26 @@ const Events = () => {
   const [formData, setFormData] = useState(initialFormData);
 
   const { data: events, isLoading, error } = useQuery({
-    queryKey: ['events', searchQuery],
-    queryFn: () => searchQuery ? eventService.searchEvents(searchQuery) : eventService.fetchEvents(),
+    queryKey: ['events', userClubs, searchQuery],
+    queryFn: async () => {
+      try {
+
+        // If searchQuery is empty or undefined, fetch all events for user clubs
+        if (!searchQuery || searchQuery.trim() === '') {
+          // Fetch events for provided user clubs
+          const allEvents = await eventService.fetchEvents(userClubs);
+          return allEvents || []; // Return empty array if no events are found
+        }
+
+        // Otherwise, search for events based on searchQuery
+        const searchedEvents = await eventService.searchEvents(searchQuery, userClubs);
+        return searchedEvents || []; // Return empty array if no events match the search query
+      } catch (error) {
+        console.error('Error loading events:', error);
+        return []; // Return empty array on error to prevent undefined
+      }
+    },
+    enabled: true, // Ensure the query is always enabled, even if userClubs is empty
   });
 
   const createEventMutation = useMutation({

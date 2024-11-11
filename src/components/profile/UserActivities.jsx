@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Link } from 'react-router-dom';
 import { CalendarIcon, Users } from 'lucide-react';
 import { useFetchUser } from '@/utils/useFetchUser';
 import { useToast } from "@/components/ui/use-toast";
-// import EventCard from '@/components/event/EventCard';
+import EventCard from '@/components/event/EventCard';
 import EventForm from '@/components/event/EventForm';
+import ClubForm from '../club/ClubForm';
+import ClubCard from '../club/ClubCard';
 import * as eventService from '@/services/eventService';
 import { fetchUserClubs, leaveClub } from '@/services/clubService';
 import {
@@ -21,53 +23,60 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-const EventCard = ({ event, onLeave }) => {
-  const [showLeaveDialog, setShowLeaveDialog] = useState(false);
-  const eventDate = new Date(event.datetime);
-  return (
-    <Card className="mb-4 p-4">
-      <div className="flex justify-between items-start mb-2">
-        <h3 className="text-xl font-semibold">{event.title}</h3>
-      </div>
-      <div className="flex items-center text-gray-600 mb-2">
-        <CalendarIcon className="mr-2 h-4 w-4" />
-        <span>{eventDate.toLocaleDateString()} {eventDate.toLocaleTimeString()}</span>
-      </div>
-      <Button onClick={() => onLeave(event)} className="bg-red-500 hover:bg-red-600">
-        Leave Event
-      </Button>
-    </Card>
-  );
-};
+// const EventCard = ({ event, onLeave }) => {
+//   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
+//   const eventDate = new Date(event.datetime);
+//   return (
+//     <Card className="mb-4 p-4">
+//       <div className="flex justify-between items-start mb-2">
+//         <h3 className="text-xl font-semibold">{event.title}</h3>
+//       </div>
+//       <div className="flex items-center text-gray-600 mb-2">
+//         <CalendarIcon className="mr-2 h-4 w-4" />
+//         <span>{eventDate.toLocaleDateString()} {eventDate.toLocaleTimeString()}</span>
+//       </div>
+//       <Button onClick={() => onLeave(event)} className="bg-red-500 hover:bg-red-600">
+//         Leave Event
+//       </Button>
+//     </Card>
+//   );
+// };
 
-const ClubCard = ({ club, onLeave }) => {
-  return (
-    <Card className="mb-4 p-4">
-      <div className="flex justify-between items-start mb-2">
-        <Link to={`/clubs/${club.id}`}>
-          <h3 className="text-xl font-semibold hover:underline cursor-pointer">
-            {club.name}
-          </h3>
-        </Link>      </div>
-      <p className="text-gray-600 mb-4">{club.description}</p>
-      <Button onClick={() => onLeave(club)} className="bg-red-500 hover:bg-red-600">
-        Leave Club
-      </Button>
-    </Card>
-  );
-};
+// const ClubCard = ({ club, onLeave }) => {
+//   return (
+//     <Card className="mb-4 p-4">
+//       <div className="flex justify-between items-start mb-2">
+//         <Link to={`/clubs/${club.id}`}>
+//           <h3 className="text-xl font-semibold hover:underline cursor-pointer">
+//             {club.name}
+//           </h3>
+//         </Link>      </div>
+//       <p className="text-gray-600 mb-4">{club.description}</p>
+//       <Button onClick={() => onLeave(club)} className="bg-red-500 hover:bg-red-600">
+//         Leave Club
+//       </Button>
+//     </Card>
+//   );
+// };
 
 const UserActivities = () => {
   const [user] = useFetchUser();
   const [showLeaveDialog, setShowLeaveDialog] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null); // To track selected event/club
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
 
-  const { data: userEvents, isLoading: eventsLoading, error: errEvent, refetch: refetchEvents } = useQuery({
-    queryKey: ['userEvents'],
-    queryFn: () => eventService.fetchUserEvents(user.id),
+  const { data: hostedEvents = [], isLoading: hostedEventsLoading, error: errHostedEvent, refetch: refetchHostedEvents } = useQuery({
+    queryKey: ['hostedEvents'],
+    queryFn: () => eventService.fetchHostedEvents(user.id),
   });
 
-  const { data: userClubs, isLoading: clubsLoading, error: errClub, refetch: refetchClubs } = useQuery({
+  const { data: participatedEvents = [], isLoading: participatedEventsLoading, error: errParticipatedEvent, refetch: refetchParticipatedEvents } = useQuery({
+    queryKey: ['participatedEvents'],
+    queryFn: () => eventService.fetchParticipatedEvents(user.id),
+  });
+
+  const { data: userClubs = [], isLoading: clubsLoading, error: errClub, refetch: refetchClubs } = useQuery({
     queryKey: ['userClubs'],
     queryFn: () => fetchUserClubs(user.id),
   });
@@ -76,14 +85,26 @@ const UserActivities = () => {
     mutationFn: eventService.leaveEvent,
     onSuccess: () => {
       // Refetch events after leaving an event
-      refetchEvents();
+      refetchHostedEvents();
+      refetchParticipatedEvents();
     },
     onError: (error) => {
       console.error("Error leaving event:", error);
     },
   });
 
-  const leaveMutation = useMutation({
+  const deleteEventMutation = useMutation({
+    mutationFn: eventService.deleteEvent,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['hostedEvents'] });
+      toast({
+        title: "Event deleted successfully",
+        description: "The event has been removed.",
+      });
+    },
+  });
+
+  const leaveClubMutation = useMutation({
     mutationFn: leaveClub,
     onSuccess: (data, { clubId }) => {
       refetchClubs();
@@ -104,35 +125,99 @@ const UserActivities = () => {
     if (selectedActivity.type === 'event') {
       leaveEventMutation.mutate({ eventId: selectedActivity.id, user_id: user?.id });
     } else if (selectedActivity.type === 'club') {
-      leaveMutation.mutate({ clubId: selectedActivity.id, user_id: user?.id })
+      leaveClubMutation.mutate({ clubId: selectedActivity.id, user_id: user?.id })
     }
     setShowLeaveDialog(false);
   };
 
-  if (eventsLoading || clubsLoading) return <div className='mt-10'>Loading your activities...</div>;
+  // if (hostedEventsLoading || participatedEventsLoading || clubsLoading) return <div className='mt-10'>Loading your activities...</div>;
 
-  if (errEvent) return <div className='mt-10'>Error loading events: {errEvent.message}</div>;
+  // if (errHostedEvent) return <div className='mt-10'>Error loading hosted events: {errHostedEvent.message}</div>;
 
-  if (errClub) return <div className='mt-10'>Error loading clubs: {errClub.message}</div>;
+  // if (errParticipatedEvent) return <div className='mt-10'>Error loading participated events: {errParticipatedEvent.message}</div>;
 
-  if ((!userEvents || userEvents.length === 0) && (!userClubs || userClubs.length === 0)) {
+  // if (errClub) return <div className='mt-10'>Error loading clubs: {errClub.message}</div>;
+
+  // if ((!hostedEvents || hostedEvents.length === 0) && (!participatedEvents || participatedEvents.length === 0) && (!userClubs || userClubs.length === 0)) {
+  //   return <div className='mt-10'>No activities found.</div>;
+  // }
+  if (hostedEventsLoading && participatedEventsLoading && clubsLoading) {
+    return <div className='mt-10'>Loading your activities...</div>;
+  }
+
+  const hasNoContent =
+    (!errHostedEvent && (!hostedEvents || hostedEvents.length === 0)) &&
+    (!errParticipatedEvent && (!participatedEvents || participatedEvents.length === 0)) &&
+    (!errClub && (!userClubs || userClubs.length === 0));
+
+  if (hasNoContent) {
     return <div className='mt-10'>No activities found.</div>;
   }
+
+  const renderEventSection = (title, events, isLoading, error, isHosted = false) => (
+    <div className="mb-8">
+      <h3 className="text-xl font-semibold mb-4">{title}</h3>
+      {isLoading ? (
+        <div className="text-gray-500">Loading events...</div>
+      ) : error ? (
+        <div className="text-red-500">Error loading events: {error.message}</div>
+      ) : events.length > 0 ? (
+        events.map(event => (
+          <EventCard
+            key={event.id}
+            event={event}
+            onJoin={() => { }}
+            onLeave={() => leaveEventMutation.mutate(event.id)}
+            onEdit={isHosted ? () => { } : undefined}
+            onDelete={isHosted ? (id) => deleteEventMutation.mutate(id) : undefined}
+            isParticipant={true}
+            currentUserId={user?.id}
+          />
+        ))
+      ) : (
+        <div className="text-gray-500">No events found</div>
+      )}
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Your Activities</h2>
-      <div className="mb-8">
-        <h3 className="text-xl font-semibold mb-4">Your Events</h3>
-        {userEvents.map(event => (
-          <EventCard key={event.id} event={event} onLeave={handleLeaveEvent} />
-        ))}
-      </div>
+      {renderEventSection(
+        "Hosted Events",
+        hostedEvents,
+        hostedEventsLoading,
+        errHostedEvent,
+        true
+      )}
+
+      {renderEventSection(
+        "Participated Events",
+        participatedEvents,
+        participatedEventsLoading,
+        errParticipatedEvent
+      )}
+      {/* Club */}
       <div>
-        <h3 className="text-xl font-semibold mb-4">Your Clubs</h3>
-        {userClubs.map(club => (
-          <ClubCard key={club.id} club={club} onLeave={handleLeaveClub} />
-        ))}
+        <h3 className="text-xl font-semibold mb-4">Clubs</h3>
+        {errClub ? (
+          <div className="text-red-500 mb-4">Error loading clubs: {errClub.message}</div>
+        ) : clubsLoading ? (
+          <div className="text-gray-500 mb-4">Loading clubs...</div>
+        ) : userClubs?.length > 0 ? (
+          userClubs.map(club => (
+            <ClubCard
+              key={club.id}
+              club={club}
+              onJoin={() => { }}
+              onLeave={handleLeaveClub}
+              isMember={true}
+              isCreator={user?.id === club.created_by_id}
+            />
+          ))
+        ) : (
+          <div className="text-gray-500 mb-4">No clubs found.</div>
+        )}
       </div>
 
       {/* AlertDialog for leaving event/club */}
