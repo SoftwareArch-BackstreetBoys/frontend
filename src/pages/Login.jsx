@@ -29,7 +29,7 @@ const Login = () => {
     <div className="max-w-md mx-auto">
       <h2 className="text-2xl font-bold mb-4">Login</h2>
       <Button onClick={googleLogin} className="w-full">
-        Login with Google
+        Login using Chula Email
       </Button>
       {/* Add more login logic here */}
     </div>
