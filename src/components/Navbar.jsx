@@ -44,9 +44,12 @@ const Navbar = () => {
             <Link to="/clubs">
               <Button variant="ghost">Clubs</Button>
             </Link>
-            <Link to="/profile">
-              <Button variant="ghost">Profile</Button>
-            </Link>
+            {user &&
+              <Link to="/profile">
+                <Button variant="ghost">Profile</Button>
+              </Link>
+            }
+
             {!user ? (
               <Link to="/login">
                 <Button>Login</Button>
