@@ -14,7 +14,7 @@ const Login = () => {
 
       cookies.set("jwt", data.token, {
         expires: new Date(new Date().getTime() + 60 * 60 * 1000 * 24 * 3),
-        sameSite: "None",
+        sameSite: "strict",
         domain: ".tuang-tang.site"
       })
       window.location.href = "/events";
