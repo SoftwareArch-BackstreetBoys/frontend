@@ -21,7 +21,8 @@ const ClubCard = ({
     onEdit,
     onDelete,
     isMember,
-    isCreator
+    isCreator,
+    currentUserId
 }) => {
     const [showLeaveDialog, setShowLeaveDialog] = useState(false);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -54,29 +55,30 @@ const ClubCard = ({
                 )}
             </div>
             <p className="text-gray-600 mb-4">{club.description}</p>
-            <div className={`flex items - center ${!isCreator ? 'justify-between' : 'justify-end'} `}>
-                {!isCreator && (
-                    <Button
-                        onClick={handleActionClick}
-                        className={isMember ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
-                    >
-                        {isMember ? 'Leave Club' : 'Join Club'}
-                    </Button>
-                )}
-                {isMember && (
-                    <Link to={`/ clubs / ${club.id} `}>
+            {currentUserId &&
+                <div className={`flex items - center ${!isCreator ? 'justify-between' : 'justify-start'} `}>
+                    {isMember && (
+                        <Link to={`/ clubs / ${club.id} `}>
+                            <Button
+                                // variant="link"
+                                size="lg"
+                                className="flex items-center gap-2 px-4"
+                            >
+                                View Club Events
+                                <ArrowUpRight className="h-5 w-5" />
+                            </Button>
+                        </Link>
+                    )}
+                    {!isCreator && (
                         <Button
-                            variant="link"
-                            size="lg"
-                            className="flex items-center gap-2 pl-6 pr-5"
+                            onClick={handleActionClick}
+                            className={isMember ? 'bg-red-500 hover:bg-red-600' : 'bg-green-500 hover:bg-green-600'}
                         >
-                            View Club Events
-                            <ArrowUpRight className="h-5 w-5" />
+                            {isMember ? 'Leave Club' : 'Join Club'}
                         </Button>
-                    </Link>
-                )}
-            </div>
-
+                    )}
+                </div>
+            }
             <AlertDialog open={showLeaveDialog} onOpenChange={setShowLeaveDialog}>
                 <AlertDialogContent>
                     <AlertDialogHeader>

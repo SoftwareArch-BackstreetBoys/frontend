@@ -30,7 +30,7 @@ const Clubs = () => {
   const [formData, setFormData] = useState(initialFormData);
   useEffect(() => {
     const initializeUserClubs = async () => {
-      if (!user?.id) return;
+      if (!user?.id) return
       try {
         const clubs = await clubService.fetchUserClubs(user.id);
         const clubIds = clubs.map((club) => club.id);
@@ -41,6 +41,7 @@ const Clubs = () => {
     };
     initializeUserClubs();
   }, [user]);
+
   const { data: clubs, isLoading, error } = useQuery({
     queryKey: ['clubs', searchQuery],
     queryFn: () => searchQuery ? clubService.searchClubs(searchQuery) : clubService.fetchClubs(),
@@ -149,7 +150,12 @@ const Clubs = () => {
       [name]: value
     }));
   };
-  if (isLoading) return <div>Loading clubs...</div>;
+  if (isLoading) {
+    if (!user?.id) return (
+      <div>You must Login to view Clubs</div>
+    );
+    return <div>Loading clubs...</div>;
+  }
   return (
     <div className="container mx-auto px-4 py-8">
       <h2 className="text-2xl font-bold mb-6">Clubs</h2>
@@ -176,6 +182,7 @@ const Clubs = () => {
             onDelete={deleteClubMutation.mutate}
             isMember={userClubs.includes(club.id)}
             isCreator={user?.id === club.created_by_id}
+            currentUserId={user?.id}
           />
         ))}
       </div>
