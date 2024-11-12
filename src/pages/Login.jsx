@@ -14,7 +14,8 @@ const Login = () => {
 
       cookies.set("jwt", data.token, {
         expires: new Date(new Date().getTime() + 60 * 60 * 1000 * 24 * 3),
-        sameSite: "strict",
+        sameSite: "None",
+        domain: ".tuang-tang.site"
       })
       window.location.href = "/events";
       // You can now use the tokenResponse to authenticate the user in your app
